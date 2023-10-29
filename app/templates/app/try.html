@@ -1,0 +1,240 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block title %}Alice{% endblock title %}
+{% block main-content %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        .small-image {max-width: 200px; max-height: 200px;}
+        /* Chat Container */
+        #chat {
+            width: 400px;
+            height: 500px;
+            margin: 0 auto;
+            background-color: #cc99ff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a {
+            color: rgb(5, 5, 8);
+            /* Link text color */
+            background-color: transparent;
+            /* Link background color */
+        }
+
+
+        /* Chat Header */
+        #chat-header {
+            background-color:#9933ff;
+            color: #fff;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Chat Title */
+        .chat-title {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        #chat {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        /* Chat Header */
+        #chat h1 {
+            background-color: #007BFF;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+            margin: 0;
+            font-size: 20px;
+        }
+
+        /* Chat History */
+        #chat-history {
+            max-height: 300px;
+            flex-grow: 1;
+            overflow-y: scroll;
+            padding: 10px;
+        }
+
+        /* User and Bot Messages */
+        .user-message,
+        .bot-message {
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 10px;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            background-color: #9966ff;
+            color: #fff;
+            text-align: right;
+        }
+
+        /* User Input */
+        #user-input {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 10px;
+            font-size: 16px;
+        }
+
+        /* Send Button */
+        #send-button {
+            background-color: #ffffff; 
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+
+        #send-button:hover {
+            background-color: #ffff00;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="chat">
+        <div id="chat-header">
+            <div class="chat-title">
+                <span>Alice</span>
+            </div>
+        </div>
+        <div id="chat-history">
+            <!-- Display chat history here -->
+        </div>
+        <input type="text" id="user-input" placeholder="Type your message...">
+        <button id="send-button">Send</button>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+
+        // Listen for the "Enter" key press in the input field
+        userInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent form submission
+                sendUserMessage(); // Call the function to send the message
+            }
+        });
+
+        sendButton.addEventListener('click', sendUserMessage);
+
+        
+        function sendUserMessage() {
+            const userMessage = userInput.value;
+            if (userMessage.trim() == '') return;
+
+            // Display user message in the chat history
+            appendMessage('user-message', userMessage);
+
+            // Send the user message to the server using AJAX
+            const formData = new FormData();
+            formData.append('user_message', userMessage);
+
+            fetch('/chatbot/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')  // Include the CSRF token
+                }
+            })
+                .then(response => response.json())
+                // .then(data => {
+                //     // Display the bot's response
+                //     appendMessage('bot-message', data.bot_response);
+
+                // })
+                .then(data => {
+                    const chatHistory = document.getElementById('chat-history');
+                    const botResponse = document.createElement('div');
+                    botResponse.className = 'bot-message';
+                    botResponse.innerHTML = data.bot_response; // Use innerHTML to render HTML content
+                    chatHistory.appendChild(botResponse);
+
+                    // Scroll to the bottom of the chat history to display the latest message
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                })
+
+
+
+
+
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+            // Clear the user input field
+            userInput.value = '';
+        }
+
+        // Function to display messages in the chat history
+        function appendMessage(className, message) {
+            const messageElement = document.createElement('div');
+            messageElement.className = className;
+            messageElement.textContent = message;
+            chatHistory.appendChild(messageElement);
+
+            // Scroll to the bottom of the chat history to display the latest message
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+
+        // Function to get the CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</body>
+
+</html>
+
+{% endblock main-content %}

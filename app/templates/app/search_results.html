@@ -1,0 +1,12 @@
+<!-- app/search_results.html -->
+<ul>
+    {% for product in search_results %}
+        <li>
+            <strong>{{ product.title }}</strong><br>
+            Description: {{ product.description }}<br>
+            Price: ${{ product.price }}
+        </li>
+    {% empty %}
+        <li>No products found.</li>
+    {% endfor %}
+</ul>
